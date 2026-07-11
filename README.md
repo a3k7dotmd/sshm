@@ -7,13 +7,19 @@
 # 🚀 SSHM - SSH Manager
 
 [![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?style=for-the-badge&logo=go)](https://golang.org/)
-[![Release](https://img.shields.io/github/v/release/Gu1llaum-3/sshm?style=for-the-badge)](https://github.com/Gu1llaum-3/sshm/releases)
-[![License](https://img.shields.io/github/license/Gu1llaum-3/sshm?style=for-the-badge)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows%20%7C%20Android(Termux)-lightgrey?style=for-the-badge)](https://github.com/Gu1llaum-3/sshm/releases)
+[![Release](https://img.shields.io/github/v/release/a3k7dotmd/sshm?style=for-the-badge)](https://github.com/a3k7dotmd/sshm/releases)
+[![License](https://img.shields.io/github/license/a3k7dotmd/sshm?style=for-the-badge)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows%20%7C%20Android(Termux)-lightgrey?style=for-the-badge)](https://github.com/a3k7dotmd/sshm/releases)
 
 > **A modern, interactive SSH Manager for your terminal** 🔥
 
 SSHM is a beautiful command-line tool that transforms how you manage and connect to your SSH hosts. Built with Go and featuring an intuitive TUI interface, it makes SSH connection management effortless and enjoyable.
+
+> [!NOTE]
+> **About this fork** — [a3k7dotmd/sshm](https://github.com/a3k7dotmd/sshm) differs from the original [Gu1llaum-3/sshm](https://github.com/Gu1llaum-3/sshm) in two ways:
+>
+> - **Android (Termux) support**, adopted from the upstream fork [suke0930/sshm](https://github.com/suke0930/sshm) — native arm64/arm builds, Termux-aware installer, runs without root.
+> - **OpenSSH-compliant `#` comment handling** ([upstream issue #61](https://github.com/Gu1llaum-3/sshm/issues/61)): the original treats unquoted `#` in `~/.ssh/config` as regular data, so inline tag comments like `Host web #prod #linux` show up as a list of phantom hosts named after the tags. This fork tokenizes exactly like OpenSSH's `argv_split` — an unquoted `#` at the start of a token begins a comment, while `#` mid-token (`web#1`) or inside quotes (`"#name"`) stays data — and it preserves your inline `#tag` comments when rewriting Host lines on edit/delete.
 
 <p align="center">
     <a href="images/sshm.gif" target="_blank">
@@ -21,6 +27,14 @@ SSHM is a beautiful command-line tool that transforms how you manage and connect
     </a>
     <br>
     <em>🖱️ Click on the image to view in full size</em>
+</p>
+
+<p align="center">
+    <a href="images/android-termux-sshm.png" target="_blank">
+        <img src="images/android-termux-sshm.png" alt="SSHM running on Android in Termux" width="320" />
+    </a>
+    <br>
+    <em>📱 SSHM on Android in Termux — with inline #tag comments parsed correctly</em>
 </p>
 
 ## ✨ Features
@@ -53,47 +67,56 @@ SSHM is a beautiful command-line tool that transforms how you manage and connect
 
 ### Installation
 
-**Homebrew (Recommended for macOS):**
-```bash
-brew install Gu1llaum-3/sshm/sshm
-```
+The install scripts below fetch this fork's [releases](https://github.com/a3k7dotmd/sshm/releases) (which include the `#` comment fix and Termux support).
 
 **Unix/Linux/macOS (One-line install):**
 ```bash
-curl -sSL https://raw.githubusercontent.com/Gu1llaum-3/sshm/main/install/unix.sh | bash
+curl -sSL https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/unix.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/Gu1llaum-3/sshm/main/install/windows.ps1 | iex
+irm https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/windows.ps1 | iex
 ```
 
 **Android (Termux):**
 ```bash
 # From inside Termux — no root/sudo required. Installs Go and builds from source.
-curl -sSL https://raw.githubusercontent.com/suke0930/sshm/main/install/termux.sh | bash
+curl -sSL https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/termux.sh | bash
 ```
-> The generic Unix installer (`unix.sh`) auto-detects Termux and delegates to `termux.sh`, so the `unix.sh` one-liner works on Termux too. See the [Termux section](#-android-termux-support) below for details.
+> The generic Unix installer (`unix.sh`) auto-detects Termux and delegates to `termux.sh`, so the `unix.sh` one-liner works on Termux too. See the [Termux notes](#platform-specific-notes) below and the [installer guide](install/README.md) for details and options.
 
 **Alternative methods:**
 
-*Linux/macOS:*
+*Linux/macOS (manual download):*
 ```bash
 # Download specific release
-wget https://github.com/Gu1llaum-3/sshm/releases/latest/download/sshm-linux-amd64.tar.gz
+wget https://github.com/a3k7dotmd/sshm/releases/latest/download/sshm_Linux_x86_64.tar.gz
 
 # Extract and install
-tar -xzf sshm-linux-amd64.tar.gz
-sudo mv sshm-linux-amd64 /usr/local/bin/sshm
+tar -xzf sshm_Linux_x86_64.tar.gz
+sudo mv sshm /usr/local/bin/sshm
 ```
 
-*Windows:*
+*Windows (manual download):*
 ```powershell
 # Download and extract
-Invoke-WebRequest -Uri "https://github.com/Gu1llaum-3/sshm/releases/latest/download/sshm-windows-amd64.zip" -OutFile "sshm-windows-amd64.zip"
-Expand-Archive sshm-windows-amd64.zip -DestinationPath C:\tools\
+Invoke-WebRequest -Uri "https://github.com/a3k7dotmd/sshm/releases/latest/download/sshm_Windows_x86_64.zip" -OutFile "sshm_Windows_x86_64.zip"
+Expand-Archive sshm_Windows_x86_64.zip -DestinationPath C:\tools\
 # Add C:\tools to your PATH environment variable
 ```
+
+*Android/Termux (manual download):*
+```bash
+curl -LO https://github.com/a3k7dotmd/sshm/releases/latest/download/sshm_Android_arm64.tar.gz
+tar -xzf sshm_Android_arm64.tar.gz
+mv sshm $PREFIX/bin/
+```
+
+*Build from source:* see [Build from Source](#build-from-source). All prebuilt archives for every platform/architecture are listed in the [Releases section](#-releases).
+
+> [!TIP]
+> Homebrew (`brew install Gu1llaum-3/sshm/sshm`) installs the **original upstream** version, without this fork's `#` comment fix.
 
 ## 📖 Usage
 
@@ -740,7 +763,7 @@ If no configuration file exists, SSHM will automatically create one with default
 
 ```bash
 # Clone the repository
-git clone https://github.com/Gu1llaum-3/sshm.git
+git clone https://github.com/a3k7dotmd/sshm.git
 cd sshm
 
 # Build the binary
@@ -817,12 +840,14 @@ Automated releases are built for multiple platforms:
 
 | Platform | Architecture | Download |
 |----------|-------------|----------|
-| Linux | AMD64 | [sshm-linux-amd64.tar.gz](https://github.com/Gu1llaum-3/sshm/releases/latest/download/sshm-linux-amd64.tar.gz) |
-| Linux | ARM64 | [sshm-linux-arm64.tar.gz](https://github.com/Gu1llaum-3/sshm/releases/latest/download/sshm-linux-arm64.tar.gz) |
-| macOS | Intel | [sshm-darwin-amd64.tar.gz](https://github.com/Gu1llaum-3/sshm/releases/latest/download/sshm-darwin-amd64.tar.gz) |
-| macOS | Apple Silicon | [sshm-darwin-arm64.tar.gz](https://github.com/Gu1llaum-3/sshm/releases/latest/download/sshm-darwin-arm64.tar.gz) |
-| Windows | AMD64 | [sshm-windows-amd64.zip](https://github.com/Gu1llaum-3/sshm/releases/latest/download/sshm-windows-amd64.zip) |
-| Windows | ARM64 | [sshm-windows-arm64.zip](https://github.com/Gu1llaum-3/sshm/releases/latest/download/sshm-windows-arm64.zip) |
+| Linux | x86_64 | [sshm_Linux_x86_64.tar.gz](https://github.com/a3k7dotmd/sshm/releases/latest/download/sshm_Linux_x86_64.tar.gz) |
+| Linux | ARM64 | [sshm_Linux_arm64.tar.gz](https://github.com/a3k7dotmd/sshm/releases/latest/download/sshm_Linux_arm64.tar.gz) |
+| macOS | Intel | [sshm_Darwin_x86_64.tar.gz](https://github.com/a3k7dotmd/sshm/releases/latest/download/sshm_Darwin_x86_64.tar.gz) |
+| macOS | Apple Silicon | [sshm_Darwin_arm64.tar.gz](https://github.com/a3k7dotmd/sshm/releases/latest/download/sshm_Darwin_arm64.tar.gz) |
+| Windows | x86_64 | [sshm_Windows_x86_64.zip](https://github.com/a3k7dotmd/sshm/releases/latest/download/sshm_Windows_x86_64.zip) |
+| Android (Termux) | ARM64 | [sshm_Android_arm64.tar.gz](https://github.com/a3k7dotmd/sshm/releases/latest/download/sshm_Android_arm64.tar.gz) |
+
+Additional builds (Linux i386/armv6/armv7, Windows i386, Android armv6/armv7) are available on the [releases page](https://github.com/a3k7dotmd/sshm/releases).
 
 ## 🤝 Contributing
 
@@ -842,6 +867,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
+- [Guillaume](https://github.com/Gu1llaum-3) for creating the original [sshm](https://github.com/Gu1llaum-3/sshm)
+- [@suke0930](https://github.com/suke0930) for the Android (Termux) support this fork builds on
 - [Charm](https://charm.sh/) for the amazing TUI libraries
 - [Cobra](https://cobra.dev/) for the excellent CLI framework
 - [@yimeng](https://github.com/yimeng) for contributing SSH Include directive support
@@ -853,7 +880,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Made with ❤️ by [Guillaume](https://github.com/Gu1llaum-3)**
+**Made with ❤️ by [Guillaume](https://github.com/Gu1llaum-3)** — fork maintained by [a3k7dotmd](https://github.com/a3k7dotmd)
 
 ⭐ **Star this repo if you found it useful!** ⭐
 
