@@ -1786,3 +1786,265 @@ Host "quoted1" "quoted2"
 		}
 	}
 }
+
+func TestStripInlineComment(t *testing.T) {
+	tests := []struct {
+		name     string
+		line     string
+		expected string
+	}{
+		{"no comment", "Host server1", "Host server1"},
+		{"tag comment on host line", "Host server1 #linux #home", "Host server1"},
+		{"comment with space after hash", "HostName 10.0.0.1 # production box", "HostName 10.0.0.1"},
+		{"hash in the middle of a token is kept", "HostName web#1.example.com", "HostName web#1.example.com"},
+		{"double-quoted hash is kept", `Host "#quoted"`, `Host "#quoted"`},
+		{"single-quoted hash is kept", "Host '#quoted'", "Host '#quoted'"},
+		{"comment after quoted token", `IdentityFile "my key" #backup`, `IdentityFile "my key"`},
+		{"full line comment", "# just a comment", ""},
+		{"tab before comment", "Port 2222\t#alt port", "Port 2222"},
+		{"escaped hash does not start a comment", `Host web \#not-a-comment`, `Host web \#not-a-comment`},
+		{"empty line", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := stripInlineComment(tt.line); got != tt.expected {
+				t.Errorf("stripInlineComment(%q) = %q, want %q", tt.line, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestSplitInlineComment(t *testing.T) {
+	content, comment := splitInlineComment("server1 server2 #linux #home")
+	if content != "server1 server2" {
+		t.Errorf("content = %q, want %q", content, "server1 server2")
+	}
+	if comment != "#linux #home" {
+		t.Errorf("comment = %q, want %q", comment, "#linux #home")
+	}
+
+	content, comment = splitInlineComment("server1")
+	if content != "server1" || comment != "" {
+		t.Errorf("splitInlineComment without comment = (%q, %q), want (%q, %q)", content, comment, "server1", "")
+	}
+}
+
+func TestParseSSHConfigWithInlineComments(t *testing.T) {
+	tempDir := t.TempDir()
+
+	configFile := filepath.Join(tempDir, "config")
+	configContent := `Host server1 #linux #home
+    HostName 10.0.0.1
+    User alex # main account
+    Port 2222 #alt port
+
+Host server2 server3 #windows #cloud
+    HostName 10.0.0.2
+
+Host midtoken
+    HostName web#1.example.com
+`
+
+	err := os.WriteFile(configFile, []byte(configContent), 0600)
+	if err != nil {
+		t.Fatalf("Failed to create config: %v", err)
+	}
+
+	hosts, err := ParseSSHConfigFile(configFile)
+	if err != nil {
+		t.Fatalf("ParseSSHConfigFile() error = %v", err)
+	}
+
+	// Comment tokens like #linux must not become hosts
+	expectedHosts := map[string]bool{
+		"server1":  false,
+		"server2":  false,
+		"server3":  false,
+		"midtoken": false,
+	}
+
+	if len(hosts) != len(expectedHosts) {
+		t.Errorf("Expected %d hosts, got %d", len(expectedHosts), len(hosts))
+		for _, host := range hosts {
+			t.Logf("Found host: %s", host.Name)
+		}
+	}
+
+	for _, host := range hosts {
+		if _, expected := expectedHosts[host.Name]; !expected {
+			t.Errorf("Unexpected host found: %s", host.Name)
+		} else {
+			expectedHosts[host.Name] = true
+		}
+	}
+
+	for hostName, found := range expectedHosts {
+		if !found {
+			t.Errorf("Expected host %s not found", hostName)
+		}
+	}
+
+	// Inline comments must be stripped from directive values too
+	for _, host := range hosts {
+		switch host.Name {
+		case "server1":
+			if host.Hostname != "10.0.0.1" {
+				t.Errorf("server1 hostname = %q, want %q", host.Hostname, "10.0.0.1")
+			}
+			if host.User != "alex" {
+				t.Errorf("server1 user = %q, want %q", host.User, "alex")
+			}
+			if host.Port != "2222" {
+				t.Errorf("server1 port = %q, want %q", host.Port, "2222")
+			}
+		case "midtoken":
+			if host.Hostname != "web#1.example.com" {
+				t.Errorf("midtoken hostname = %q, want %q", host.Hostname, "web#1.example.com")
+			}
+		}
+	}
+}
+
+func TestHostExistsWithInlineComments(t *testing.T) {
+	tempDir := t.TempDir()
+
+	configFile := filepath.Join(tempDir, "config")
+	configContent := `Host server1 #linux #home
+    HostName 10.0.0.1
+`
+
+	err := os.WriteFile(configFile, []byte(configContent), 0600)
+	if err != nil {
+		t.Fatalf("Failed to create config: %v", err)
+	}
+
+	exists, err := HostExistsInSpecificFile("server1", configFile)
+	if err != nil {
+		t.Fatalf("HostExistsInSpecificFile() error = %v", err)
+	}
+	if !exists {
+		t.Errorf("server1 should exist")
+	}
+
+	for _, tag := range []string{"#linux", "#home"} {
+		exists, err = HostExistsInSpecificFile(tag, configFile)
+		if err != nil {
+			t.Fatalf("HostExistsInSpecificFile() error = %v", err)
+		}
+		if exists {
+			t.Errorf("comment token %q must not be reported as an existing host", tag)
+		}
+	}
+
+	found, err := QuickHostExistsInFile("server1", configFile)
+	if err != nil {
+		t.Fatalf("QuickHostExistsInFile() error = %v", err)
+	}
+	if !found {
+		t.Errorf("QuickHostExistsInFile should find server1")
+	}
+
+	found, err = QuickHostExistsInFile("#linux", configFile)
+	if err != nil {
+		t.Fatalf("QuickHostExistsInFile() error = %v", err)
+	}
+	if found {
+		t.Errorf("QuickHostExistsInFile must not find comment token #linux")
+	}
+}
+
+func TestDeleteSSHHostPreservesInlineComment(t *testing.T) {
+	tempDir := t.TempDir()
+
+	configFile := filepath.Join(tempDir, "config")
+	configContent := `Host server1 server2 #linux #home
+    HostName 10.0.0.1
+    User alex
+
+Host other
+    HostName 10.0.0.9
+`
+
+	err := os.WriteFile(configFile, []byte(configContent), 0600)
+	if err != nil {
+		t.Fatalf("Failed to create config: %v", err)
+	}
+
+	// Redirect backups into the temp dir to avoid touching the real home
+	t.Setenv("HOME", tempDir)
+
+	if err := DeleteSSHHostFromFile("server1", configFile); err != nil {
+		t.Fatalf("DeleteSSHHostFromFile() error = %v", err)
+	}
+
+	content, err := os.ReadFile(configFile)
+	if err != nil {
+		t.Fatalf("Failed to read config: %v", err)
+	}
+
+	// server2 must remain, with the tag comment preserved on the Host line
+	if !strings.Contains(string(content), "Host server2 #linux #home") {
+		t.Errorf("Host line should keep remaining host and inline comment, got:\n%s", string(content))
+	}
+	if strings.Contains(string(content), "server1") {
+		t.Errorf("server1 should have been removed, got:\n%s", string(content))
+	}
+
+	// Deleting the last host of the line must remove the whole block,
+	// never leave a "Host #linux #home" corpse behind
+	if err := DeleteSSHHostFromFile("server2", configFile); err != nil {
+		t.Fatalf("DeleteSSHHostFromFile() error = %v", err)
+	}
+
+	content, err = os.ReadFile(configFile)
+	if err != nil {
+		t.Fatalf("Failed to read config: %v", err)
+	}
+	if strings.Contains(string(content), "#linux") {
+		t.Errorf("deleting the last host should remove the block including its comment, got:\n%s", string(content))
+	}
+	if !strings.Contains(string(content), "Host other") {
+		t.Errorf("unrelated host block should survive, got:\n%s", string(content))
+	}
+}
+
+func TestUpdateSSHHostPreservesInlineComment(t *testing.T) {
+	tempDir := t.TempDir()
+
+	configFile := filepath.Join(tempDir, "config")
+	configContent := `Host server1 #linux #home
+    HostName 10.0.0.1
+    User alex
+`
+
+	err := os.WriteFile(configFile, []byte(configContent), 0600)
+	if err != nil {
+		t.Fatalf("Failed to create config: %v", err)
+	}
+
+	// Redirect backups into the temp dir to avoid touching the real home
+	t.Setenv("HOME", tempDir)
+
+	newHost := SSHHost{
+		Name:     "server1-renamed",
+		Hostname: "10.0.0.5",
+		User:     "alex",
+		Port:     "22",
+	}
+	if err := UpdateSSHHostInFile("server1", newHost, configFile); err != nil {
+		t.Fatalf("UpdateSSHHostInFile() error = %v", err)
+	}
+
+	content, err := os.ReadFile(configFile)
+	if err != nil {
+		t.Fatalf("Failed to read config: %v", err)
+	}
+
+	if !strings.Contains(string(content), "Host server1-renamed #linux #home") {
+		t.Errorf("edit should keep the inline tag comment on the Host line, got:\n%s", string(content))
+	}
+	if !strings.Contains(string(content), "HostName 10.0.0.5") {
+		t.Errorf("edit should update HostName, got:\n%s", string(content))
+	}
+}

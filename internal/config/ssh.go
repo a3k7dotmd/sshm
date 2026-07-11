@@ -257,6 +257,9 @@ func parseSSHConfigFileWithProcessedFiles(configPath string, processedFiles map[
 			continue
 		}
 
+		// Strip unquoted trailing comments, as the OpenSSH tokenizer does
+		line = stripInlineComment(line)
+
 		// Split line into words
 		parts := strings.Fields(line)
 		if len(parts) < 2 {
@@ -548,6 +551,60 @@ func formatSSHConfigValue(value string) string {
 	return value
 }
 
+// inlineCommentIndex returns the byte offset where an unquoted '#' starts a
+// comment, following the OpenSSH tokenizer (argv_split with
+// terminate_on_comment): '#' only starts a comment at the beginning of a
+// whitespace-separated token. A '#' inside quotes or in the middle of a token
+// (e.g. "web#1") is regular data. Returns -1 when the line has no comment.
+func inlineCommentIndex(line string) int {
+	var quote byte
+	tokenStart := true
+	for i := 0; i < len(line); i++ {
+		c := line[i]
+		switch {
+		case quote == 0 && (c == ' ' || c == '\t'):
+			tokenStart = true
+			continue
+		case quote == 0 && c == '#' && tokenStart:
+			return i
+		case c == '\\' && i+1 < len(line):
+			i++ // an escaped character never starts a comment
+		case quote == 0 && (c == '"' || c == '\''):
+			quote = c
+		case quote != 0 && c == quote:
+			quote = 0
+		}
+		tokenStart = false
+	}
+	return -1
+}
+
+// splitInlineComment splits a config line into its content and trailing
+// comment (empty string when there is none), trimming the whitespace
+// between them.
+func splitInlineComment(line string) (content, comment string) {
+	i := inlineCommentIndex(line)
+	if i < 0 {
+		return line, ""
+	}
+	return strings.TrimRight(line[:i], " \t"), line[i:]
+}
+
+// stripInlineComment returns the line with any unquoted trailing comment removed.
+func stripInlineComment(line string) string {
+	content, _ := splitInlineComment(line)
+	return content
+}
+
+// appendInlineComment re-attaches a comment previously captured by
+// splitInlineComment to a rewritten config line.
+func appendInlineComment(line, comment string) string {
+	if comment == "" {
+		return line
+	}
+	return line + " " + comment
+}
+
 // AddSSHHost adds a new SSH host to the config file
 func AddSSHHost(host SSHHost) error {
 	configPath, err := GetDefaultSSHConfigPath()
@@ -798,7 +855,7 @@ func HostExistsInSpecificFile(hostName string, configPath string) (bool, error) 
 		if strings.HasPrefix(strings.ToLower(line), "host ") {
 			// Extract host names (can be multiple hosts on one line)
 			hostPart := strings.TrimSpace(line[5:]) // Remove "host "
-			hostNames := strings.Fields(hostPart)
+			hostNames := strings.Fields(stripInlineComment(hostPart))
 
 			for _, name := range hostNames {
 				if name == hostName {
@@ -890,6 +947,9 @@ func quickHostSearchInFile(hostName string, configPath string, processedFiles ma
 		if line == "" || (strings.HasPrefix(line, "#") && !strings.HasPrefix(line, "# Tags:")) {
 			continue
 		}
+
+		// Strip unquoted trailing comments, as the OpenSSH tokenizer does
+		line = stripInlineComment(line)
 
 		// Split line into words
 		parts := strings.Fields(line)
@@ -988,7 +1048,7 @@ func IsPartOfMultiHostDeclaration(hostName string, configPath string) (bool, []s
 		if strings.HasPrefix(strings.ToLower(line), "host ") {
 			// Extract host names (can be multiple hosts on one line)
 			hostPart := strings.TrimSpace(line[5:]) // Remove "host "
-			hostNames := strings.Fields(hostPart)
+			hostNames := strings.Fields(stripInlineComment(hostPart))
 
 			// Check if our target host is in this Host declaration
 			for _, name := range hostNames {
@@ -1042,7 +1102,8 @@ func UpdateSSHHostInFile(oldName string, newHost SSHHost, configPath string) err
 			// Check if this is a Host line that contains our target host
 			if strings.HasPrefix(nextLine, "Host ") {
 				hostPart := strings.TrimSpace(nextLine[5:]) // Remove "Host "
-				foundHostNames := strings.Fields(hostPart)
+				hostNamesPart, hostComment := splitInlineComment(hostPart)
+				foundHostNames := strings.Fields(hostNamesPart)
 
 				// Check if our target host is in this Host declaration
 				targetHostIndex := -1
@@ -1071,7 +1132,7 @@ func UpdateSSHHostInFile(oldName string, newHost SSHHost, configPath string) err
 
 						// Update the Host line with remaining hosts
 						if len(remainingHosts) > 0 {
-							newLines = append(newLines, "Host "+strings.Join(remainingHosts, " "))
+							newLines = append(newLines, appendInlineComment("Host "+strings.Join(remainingHosts, " "), hostComment))
 
 							// Copy the existing configuration for remaining hosts
 							i += 2 // Skip tags and original Host line
@@ -1149,7 +1210,7 @@ func UpdateSSHHostInFile(oldName string, newHost SSHHost, configPath string) err
 						if len(newHost.Tags) > 0 {
 							newLines = append(newLines, "# Tags: "+strings.Join(newHost.Tags, ", "))
 						}
-						newLines = append(newLines, "Host "+newHost.Name)
+						newLines = append(newLines, appendInlineComment("Host "+newHost.Name, hostComment))
 						newLines = append(newLines, "    HostName "+newHost.Hostname)
 						if newHost.User != "" {
 							newLines = append(newLines, "    User "+newHost.User)
@@ -1195,7 +1256,8 @@ func UpdateSSHHostInFile(oldName string, newHost SSHHost, configPath string) err
 		// Check for Host line without tags
 		if strings.HasPrefix(line, "Host ") {
 			hostPart := strings.TrimSpace(line[5:]) // Remove "Host "
-			foundHostNames := strings.Fields(hostPart)
+			hostNamesPart, hostComment := splitInlineComment(hostPart)
+			foundHostNames := strings.Fields(hostNamesPart)
 
 			// Check if our target host is in this Host declaration
 			targetHostIndex := -1
@@ -1221,7 +1283,7 @@ func UpdateSSHHostInFile(oldName string, newHost SSHHost, configPath string) err
 
 					// Update the Host line with remaining hosts
 					if len(remainingHosts) > 0 {
-						newLines = append(newLines, "Host "+strings.Join(remainingHosts, " "))
+						newLines = append(newLines, appendInlineComment("Host "+strings.Join(remainingHosts, " "), hostComment))
 
 						// Copy the existing configuration for remaining hosts
 						i++ // Skip original Host line
@@ -1299,7 +1361,7 @@ func UpdateSSHHostInFile(oldName string, newHost SSHHost, configPath string) err
 					if len(newHost.Tags) > 0 {
 						newLines = append(newLines, "# Tags: "+strings.Join(newHost.Tags, ", "))
 					}
-					newLines = append(newLines, "Host "+newHost.Name)
+					newLines = append(newLines, appendInlineComment("Host "+newHost.Name, hostComment))
 					newLines = append(newLines, "    HostName "+newHost.Hostname)
 					if newHost.User != "" {
 						newLines = append(newLines, "    User "+newHost.User)
@@ -1409,7 +1471,8 @@ func DeleteSSHHostFromFileWithLine(hostName, configPath string, targetLineNumber
 			// Check if this is a Host line that contains our target host
 			if strings.HasPrefix(nextLine, "Host ") {
 				hostPart := strings.TrimSpace(nextLine[5:]) // Remove "Host "
-				foundHostNames := strings.Fields(hostPart)
+				hostNamesPart, hostComment := splitInlineComment(hostPart)
+				foundHostNames := strings.Fields(hostNamesPart)
 
 				// Check if our target host is in this Host declaration
 				targetHostIndex := -1
@@ -1440,7 +1503,7 @@ func DeleteSSHHostFromFileWithLine(hostName, configPath string, targetLineNumber
 
 						if len(remainingHosts) > 0 {
 							// Update the Host line with remaining hosts
-							newLines = append(newLines, "Host "+strings.Join(remainingHosts, " "))
+							newLines = append(newLines, appendInlineComment("Host "+strings.Join(remainingHosts, " "), hostComment))
 
 							// Copy the existing configuration for remaining hosts
 							i += 2 // Skip tags and original Host line
@@ -1496,7 +1559,8 @@ func DeleteSSHHostFromFileWithLine(hostName, configPath string, targetLineNumber
 		// Check for Host line without tags
 		if strings.HasPrefix(line, "Host ") {
 			hostPart := strings.TrimSpace(line[5:]) // Remove "Host "
-			foundHostNames := strings.Fields(hostPart)
+			hostNamesPart, hostComment := splitInlineComment(hostPart)
+			foundHostNames := strings.Fields(hostNamesPart)
 
 			// Check if our target host is in this Host declaration
 			targetHostIndex := -1
@@ -1524,7 +1588,7 @@ func DeleteSSHHostFromFileWithLine(hostName, configPath string, targetLineNumber
 
 					if len(remainingHosts) > 0 {
 						// Update the Host line with remaining hosts
-						newLines = append(newLines, "Host "+strings.Join(remainingHosts, " "))
+						newLines = append(newLines, appendInlineComment("Host "+strings.Join(remainingHosts, " "), hostComment))
 
 						// Copy the existing configuration for remaining hosts
 						i++ // Skip original Host line
@@ -1818,7 +1882,8 @@ func UpdateMultiHostBlock(originalHosts, newHosts []string, commonProperties SSH
 			// Check if this is a Host line that contains any of our original hosts
 			if strings.HasPrefix(nextLine, "Host ") {
 				hostPart := strings.TrimSpace(nextLine[5:]) // Remove "Host "
-				foundHostNames := strings.Fields(hostPart)
+				hostNamesPart, hostComment := splitInlineComment(hostPart)
+				foundHostNames := strings.Fields(hostNamesPart)
 
 				// Check if any of our original hosts are in this Host declaration
 				hasOriginalHost := false
@@ -1859,7 +1924,7 @@ func UpdateMultiHostBlock(originalHosts, newHosts []string, commonProperties SSH
 					}
 
 					// Add Host line with new host names
-					newLines = append(newLines, "Host "+strings.Join(newHosts, " "))
+					newLines = append(newLines, appendInlineComment("Host "+strings.Join(newHosts, " "), hostComment))
 
 					// Add common properties
 					newLines = append(newLines, "    HostName "+commonProperties.Hostname)
@@ -1907,7 +1972,8 @@ func UpdateMultiHostBlock(originalHosts, newHosts []string, commonProperties SSH
 		// Check for Host line without tags (same logic)
 		if strings.HasPrefix(line, "Host ") {
 			hostPart := strings.TrimSpace(line[5:]) // Remove "Host "
-			foundHostNames := strings.Fields(hostPart)
+			hostNamesPart, hostComment := splitInlineComment(hostPart)
+			foundHostNames := strings.Fields(hostNamesPart)
 
 			// Check if any of our original hosts are in this Host declaration
 			hasOriginalHost := false
@@ -1948,7 +2014,7 @@ func UpdateMultiHostBlock(originalHosts, newHosts []string, commonProperties SSH
 				}
 
 				// Add Host line with new host names
-				newLines = append(newLines, "Host "+strings.Join(newHosts, " "))
+				newLines = append(newLines, appendInlineComment("Host "+strings.Join(newHosts, " "), hostComment))
 
 				// Add common properties
 				newLines = append(newLines, "    HostName "+commonProperties.Hostname)
