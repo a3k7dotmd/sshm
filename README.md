@@ -847,7 +847,7 @@ Automated releases are built for multiple platforms:
 | Windows | x86_64 | [sshm_Windows_x86_64.zip](https://github.com/a3k7dotmd/sshm/releases/latest/download/sshm_Windows_x86_64.zip) |
 | Android (Termux) | ARM64 | [sshm_Android_arm64.tar.gz](https://github.com/a3k7dotmd/sshm/releases/latest/download/sshm_Android_arm64.tar.gz) |
 
-Additional builds (Linux i386/armv6/armv7, Windows i386, Android armv6/armv7) are available on the [releases page](https://github.com/a3k7dotmd/sshm/releases).
+Additional builds (Linux i386/armv6/armv7, Windows i386) are available on the [releases page](https://github.com/a3k7dotmd/sshm/releases).
 
 ## 🤝 Contributing
 

@@ -29,11 +29,14 @@ builds:
     goarch: arm
   - goos: windows
     goarch: arm64
-  # Android only ships on arm/arm64 (and amd64 in emulators); skip the rest
+  # Android only ships on arm64: amd64/386 are emulator-only, and 32-bit
+  # arm requires external (cgo/NDK) linking which plain goreleaser can't do
   - goos: android
     goarch: amd64
   - goos: android
     goarch: "386"
+  - goos: android
+    goarch: arm
   env:
   - CGO_ENABLED=0
   ldflags:
