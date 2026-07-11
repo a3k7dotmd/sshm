@@ -7,7 +7,7 @@ This directory contains installation scripts for SSHM.
 ### Quick Install (Recommended)
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Gu1llaum-3/sshm/main/install/unix.sh | bash
+curl -sSL https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/unix.sh | bash
 ```
 
 **Note:** When using the pipe method, the installer will automatically proceed with installation if SSHM is already installed.
@@ -17,38 +17,38 @@ curl -sSL https://raw.githubusercontent.com/Gu1llaum-3/sshm/main/install/unix.sh
 ### Quick Install (Recommended)
 
 ```powershell
-irm https://raw.githubusercontent.com/Gu1llaum-3/sshm/main/install/windows.ps1 | iex
+irm https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/windows.ps1 | iex
 ```
 
 ### Install Options
 
 **Force install without prompts:**
 ```powershell
-iex "& { $(irm https://raw.githubusercontent.com/Gu1llaum-3/sshm/main/install/windows.ps1) } -Force"
+iex "& { $(irm https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/windows.ps1) } -Force"
 ```
 
 **Custom installation directory:**
 ```powershell
-iex "& { $(irm https://raw.githubusercontent.com/Gu1llaum-3/sshm/main/install/windows.ps1) } -InstallDir 'C:\tools'"
+iex "& { $(irm https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/windows.ps1) } -InstallDir 'C:\tools'"
 ```
 
 ## Unix/Linux/macOS Advanced Options
 
 **Force install without prompts:**
 ```bash
-FORCE_INSTALL=true bash -c "$(curl -sSL https://raw.githubusercontent.com/Gu1llaum-3/sshm/main/install/unix.sh)"
+FORCE_INSTALL=true bash -c "$(curl -sSL https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/unix.sh)"
 ```
 
 **Disable auto-install when using pipe:**
 ```bash
-FORCE_INSTALL=false bash -c "$(curl -sSL https://raw.githubusercontent.com/Gu1llaum-3/sshm/main/install/unix.sh)"
+FORCE_INSTALL=false bash -c "$(curl -sSL https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/unix.sh)"
 ```
 
 ### Manual Install
 
 1. Download the script:
 ```bash
-curl -O https://raw.githubusercontent.com/Gu1llaum-3/sshm/main/install/unix.sh
+curl -O https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/unix.sh
 ```
 
 2. Make it executable:
@@ -93,14 +93,14 @@ dedicated installer for this environment.
 From inside Termux:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/suke0930/sshm/main/install/termux.sh | bash
+curl -sSL https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/termux.sh | bash
 ```
 
 The generic Unix installer also works — it auto-detects Termux and
 delegates to `termux.sh`:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/suke0930/sshm/main/install/unix.sh | bash
+curl -sSL https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/unix.sh | bash
 ```
 
 ### What the Termux installer does
@@ -116,29 +116,29 @@ curl -sSL https://raw.githubusercontent.com/suke0930/sshm/main/install/unix.sh |
 
 **Specific version / tag:**
 ```bash
-SSHM_VERSION=v1.8.1 bash -c "$(curl -sSL https://raw.githubusercontent.com/suke0930/sshm/main/install/termux.sh)"
+SSHM_VERSION=v1.8.1 bash -c "$(curl -sSL https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/termux.sh)"
 ```
 
 **Force install without prompts:**
 ```bash
-FORCE_INSTALL=true bash -c "$(curl -sSL https://raw.githubusercontent.com/suke0930/sshm/main/install/termux.sh)"
+FORCE_INSTALL=true bash -c "$(curl -sSL https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/termux.sh)"
 ```
 
 **Try a prebuilt binary first, fall back to source:**
 ```bash
-SSHM_FROM_SOURCE=false bash -c "$(curl -sSL https://raw.githubusercontent.com/suke0930/sshm/main/install/termux.sh)"
+SSHM_FROM_SOURCE=false bash -c "$(curl -sSL https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/termux.sh)"
 ```
 
 **Build from a fork:**
 ```bash
-SSHM_REPO=yourname/sshm bash -c "$(curl -sSL https://raw.githubusercontent.com/suke0930/sshm/main/install/termux.sh)"
+SSHM_REPO=yourname/sshm bash -c "$(curl -sSL https://raw.githubusercontent.com/a3k7dotmd/sshm/main/install/termux.sh)"
 ```
 
 ### Manual Termux Install
 
 ```bash
 pkg install golang git openssh
-git clone https://github.com/suke0930/sshm.git ~/sshm
+git clone https://github.com/a3k7dotmd/sshm.git ~/sshm
 cd ~/sshm
 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $PREFIX/bin/sshm .
 sshm --version

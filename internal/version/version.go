@@ -18,7 +18,7 @@ import (
 //
 // When set to the empty string, update checking is effectively disabled
 // (the request is skipped and "no update" is reported).
-var UpdateCheckURL = "https://api.github.com/repos/Gu1llaum-3/sshm/releases/latest"
+var UpdateCheckURL = "https://api.github.com/repos/a3k7dotmd/sshm/releases/latest"
 
 // GitHubRelease represents a GitHub release response
 type GitHubRelease struct {

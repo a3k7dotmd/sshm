@@ -63,7 +63,7 @@ runAsRoot() {
 getLatestVersion() {
     if [ "$SSHM_VERSION" = "latest" ]; then
         printf "${YELLOW}Fetching latest stable version...${NC}\n"
-        LATEST_VERSION=$(curl -s https://api.github.com/repos/Gu1llaum-3/sshm/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        LATEST_VERSION=$(curl -s https://api.github.com/repos/a3k7dotmd/sshm/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
         if [ -z "$LATEST_VERSION" ]; then
             printf "${RED}Failed to fetch latest version${NC}\n"
             exit 1
@@ -71,10 +71,10 @@ getLatestVersion() {
     else
         printf "${YELLOW}Using specified version: $SSHM_VERSION${NC}\n"
         # Validate that the specified version exists
-        RELEASE_CHECK=$(curl -s "https://api.github.com/repos/Gu1llaum-3/sshm/releases/tags/$SSHM_VERSION" | grep '"tag_name":')
+        RELEASE_CHECK=$(curl -s "https://api.github.com/repos/a3k7dotmd/sshm/releases/tags/$SSHM_VERSION" | grep '"tag_name":')
         if [ -z "$RELEASE_CHECK" ]; then
             printf "${RED}Version $SSHM_VERSION not found. Available versions:${NC}\n"
-            curl -s https://api.github.com/repos/Gu1llaum-3/sshm/releases | grep '"tag_name":' | head -10 | sed -E 's/.*"([^"]+)".*/  - \1/'
+            curl -s https://api.github.com/repos/a3k7dotmd/sshm/releases | grep '"tag_name":' | head -10 | sed -E 's/.*"([^"]+)".*/  - \1/'
             exit 1
         fi
         LATEST_VERSION="$SSHM_VERSION"
@@ -103,7 +103,7 @@ downloadBinary() {
     
     # GoReleaser format: sshm_Linux_armv7.tar.gz
     GITHUB_FILE="sshm_${GORELEASER_OS}_${GORELEASER_ARCH}.tar.gz"
-    GITHUB_URL="https://github.com/Gu1llaum-3/sshm/releases/download/$LATEST_VERSION/$GITHUB_FILE"
+    GITHUB_URL="https://github.com/a3k7dotmd/sshm/releases/download/$LATEST_VERSION/$GITHUB_FILE"
     
     printf "${YELLOW}Downloading $GITHUB_FILE...${NC}\n"
     curl -L "$GITHUB_URL" --progress-bar --output "sshm-tmp.tar.gz"
@@ -232,7 +232,7 @@ main() {
         TERMUX_SCRIPT="$SCRIPT_DIR/termux.sh"
         if [ ! -f "$TERMUX_SCRIPT" ]; then
             # Script invoked via curl|bash: download termux.sh from the same repo.
-            TERMUX_REPO="${SSHM_REPO:-https://raw.githubusercontent.com/Gu1llaum-3/sshm/main}"
+            TERMUX_REPO="${SSHM_REPO:-https://raw.githubusercontent.com/a3k7dotmd/sshm/main}"
             printf "${YELLOW}termux.sh not found locally, downloading from $TERMUX_REPO/install/termux.sh${NC}\n"
             curl -sSL "$TERMUX_REPO/install/termux.sh" -o "/tmp/sshm-termux.sh" \
                 || { printf "${RED}Failed to download termux.sh${NC}\n"; exit 1; }

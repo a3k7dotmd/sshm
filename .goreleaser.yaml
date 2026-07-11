@@ -80,31 +80,9 @@ changelog:
   - title: Others
     order: 999
 
-# Homebrew tap configuration (Formula pour CLI)
-brews:
-- name: sshm
-  repository:
-    owner: Gu1llaum-3
-    name: homebrew-sshm
-    # Token with repo permissions for your homebrew-sshm repo
-    token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-  commit_author:
-    name: goreleaserbot
-    email: bot@goreleaser.com
-  commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
-  homepage: "https://github.com/Gu1llaum-3/sshm"
-  description: "A modern SSH connection manager for your terminal"
-  license: MIT
-  skip_upload: auto
-  # Test command to verify installation
-  test: |
-    system "#{bin}/sshm --version"
-
-# Release configuration
+# Release configuration (owner/name inferred from the repository the
+# workflow runs in, so releases work on forks too)
 release:
-  github:
-    owner: Gu1llaum-3
-    name: sshm
   prerelease: auto
   draft: false
   replace_existing_draft: true
@@ -118,35 +96,13 @@ release:
   footer: |
     ## Installation
 
-    ### Homebrew (macOS/Linux)
-    ```bash
-    brew tap Gu1llaum-3/sshm
-    brew install sshm
-    ```
-
-    ### Installation Script (Recommended)
-    **Unix/Linux/macOS:**
-    ```bash
-    curl -sSL https://github.com/Gu1llaum-3/sshm/raw/main/install/unix.sh | bash
-    ```
-
-    **Windows (PowerShell):**
-    ```powershell
-    iwr -useb https://github.com/Gu1llaum-3/sshm/raw/main/install/windows.ps1 | iex
-    ```
-
-    ### Manual Installation
     Download the appropriate binary for your platform from the assets above, extract it, and place it in your PATH.
-
-    ## Full Changelog
-
-    See all changes at https://github.com/Gu1llaum-3/sshm/compare/{{.PreviousTag}}...{{.Tag}}
 
     ---
 
-    📖 **Documentation:** See the updated [README](https://github.com/Gu1llaum-3/sshm/blob/main/README.md)
+    📖 **Documentation:** See the updated [README](https://github.com/a3k7dotmd/sshm/blob/main/README.md)
 
-    🐛 **Issues:** Found a bug? Open an [issue](https://github.com/Gu1llaum-3/sshm/issues)
+    🐛 **Issues:** Found a bug? Open an [issue](https://github.com/a3k7dotmd/sshm/issues)
 
     ---
 

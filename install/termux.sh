@@ -18,7 +18,7 @@ EXECUTABLE_NAME=sshm
 FROM_SOURCE="${SSHM_FROM_SOURCE:-true}"   # Termux has no prebuilt releases yet, source is the safe path
 FORCE_INSTALL="${FORCE_INSTALL:-false}"
 SSHM_VERSION="${SSHM_VERSION:-main}"      # branch, tag or commit; "main" = latest
-SSHM_REPO="${SSHM_REPO:-suke0930/sshm}"
+SSHM_REPO="${SSHM_REPO:-a3k7dotmd/sshm}"
 
 # ---- Colors -----------------------------------------------------------------
 RED='\033[0;31m'
@@ -37,7 +37,7 @@ usage() {
     printf "  Force (no prompts):           ${GREEN}FORCE_INSTALL=true bash termux.sh${NC}\n\n"
     printf "Environment variables:\n"
     printf "  SSHM_VERSION      Tag/branch/commit to build (default: main)\n"
-    printf "  SSHM_REPO         'owner/name' GitHub repo to build from (default: suke0930/sshm)\n"
+    printf "  SSHM_REPO         'owner/name' GitHub repo to build from (default: a3k7dotmd/sshm)\n"
     printf "  SSHM_FROM_SOURCE  Build from source instead of downloading (default: true)\n"
     printf "  SSHM_UPDATE_URL   GitHub API URL for update checks (default: empty = disabled)\n"
     printf "  FORCE_INSTALL     Skip confirmation prompts (default: false)\n"
